@@ -55,8 +55,11 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         boolean onTileVerticalKey(int position, int keyCode);
     }
 
+    /** Key of the inputs tile in dock_apps / hidden_apps. */
+    static final String INPUTS_KEY = "tvhome:hdmi";
+
     static final class Entry {
-        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2;
+        static final int APP = 0, HOME_SETTINGS = 1, CARD = 2, INPUTS = 3;
 
         final int kind;
         final String label;
@@ -77,7 +80,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             this.kind = kind;
             this.label = label;
             this.component = component;
-            this.pkg = component.getPackageName();
+            // The inputs tile is not an app: it sorts under its own key, so "tvhome:hdmi" in dock_apps places it.
+            this.pkg = kind == INPUTS ? INPUTS_KEY : component.getPackageName();
             this.banner = banner;
             this.icon = icon;
             this.name = caption == null ? label : label + " \u00B7 " + caption;
@@ -118,6 +122,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
     private final boolean showHomeSettings;
+    /** The TV's own source panel (config.xml source_panel_*); empty when the TV has none. */
+    private final String panelService, panelAction;
     /** Calmer motion for weak GPUs (config.xml, reduced_motion): no overshoot, shorter fades. */
     private final boolean reducedMotion;
     private final List<Entry> items = new ArrayList<>();
@@ -129,6 +135,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.favourites = cfg.dockApps;
         this.hidden = new HashSet<>(cfg.hiddenApps);
         this.showHomeSettings = cfg.showHomeSettingsShortcut;
+        this.panelService = cfg.sourcePanelService;
+        this.panelAction = cfg.sourcePanelAction;
         this.reducedMotion = cfg.reducedMotion;
         // Tiles keep their identity across reload(), so a focused tile stays on its app instead of
         // its view being rebound to whatever app now sits in that slot.
@@ -162,6 +170,13 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 // redraw the tile name as something else (#117).
                 fresh.add(new Entry(Cards.cleanLabel(String.valueOf(ri.loadLabel(pm)), pkg), component, banner, icon));
             }
+        }
+        // A tile for the TV's own source panel (HDMI, AV, antenna), only when dock_apps asks for it with "tvhome:hdmi"
+        // and the config names the panel. It joins the list before sorting so it lands where dock_apps puts it.
+        ComponentName panel = ComponentName.unflattenFromString(panelService);
+        if (panel != null && favourites.contains(INPUTS_KEY) && !hidden.contains(INPUTS_KEY)) {
+            fresh.add(new Entry(Entry.INPUTS, ctx.getString(R.string.hdmi_tile), panel, null,
+                    ContextCompat.getDrawable(ctx, R.drawable.ic_input), null, 0));
         }
         Collections.sort(fresh, (a, b) -> {
             int fa = favourites.indexOf(a.pkg), fb = favourites.indexOf(b.pkg);
@@ -237,6 +252,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         }
         h.card.setOnClickListener(v -> launch(e));
         h.card.setOnLongClickListener(v -> {
+            if (e.kind == Entry.INPUTS) return true;   // not an app: there are no app details to show
             Intent i = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + e.pkg));
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
@@ -249,6 +265,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     /** Opens the tile's activity by explicit component, with no extras: a card can name nothing else. */
     private void launch(Entry e) {
+        if (e.kind == Entry.INPUTS) {
+            openSourcePanel(ctx, panelService, panelAction);
+            return;
+        }
         if (e.kind == Entry.HOME_SETTINGS) {
             ctx.startActivity(new Intent(ctx, HomeSettingsActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -341,6 +361,18 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         hsv[1] = Math.min(1f, hsv[1] * 1.1f);
         hsv[2] = Math.max(0.5f, hsv[2]);
         return Color.HSVToColor(hsv);
+    }
+
+    /** Opens the TV's own source-selection panel: a service the TV maker ships (TCL Android TV 9, Philco Android 4.4). */
+    static void openSourcePanel(Context ctx, String service, String action) {
+        Intent i = new Intent(action);
+        ComponentName c = ComponentName.unflattenFromString(service);
+        if (c != null) i.setComponent(c);
+        try {
+            ctx.startService(i);
+        } catch (Exception e) {
+            Toast.makeText(ctx, R.string.not_available, Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**

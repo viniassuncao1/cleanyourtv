@@ -1,0 +1,11 @@
+{
+  "dock_apps": ["com.google.android.youtube.tv", "com.netflix.mediaclient", "tvhome:hdmi"],
+  "hidden_apps": ["com.hikeen.selftest", "com.hikeen.otaupdate", "com.cvte.taskmanager"],
+  "columns": 3,
+  "source_panel_service": "com.hikeen.xymenu/.MyService",
+  "source_panel_action": "com.hikeen.xymenu.MyService.Start",
+  "live_source_activity": "com.tsb.tv/.Tv_strategy",
+  "ambient_glow": false,
+  "background_color": "#0B3FA8",
+  "wallpaper": false
+}

@@ -52,13 +52,20 @@ final class Config {
     final File wallpaper;
     /** Whether the overlay file was present and parsed. */
     final boolean overlayApplied;
+    /** The glow behind the focused dock app (config.json ambient_glow); on unless a theme turns it off. */
+    final boolean ambientGlow;
+    /**
+     * Activity ("pkg/.Cls") to open right after the TV starts when a video source (HDMI, antenna) is already
+     * playing under the menu; empty = do nothing. config.json live_source_activity.
+     */
+    final String liveSourceActivity;
 
     private Config(List<String> dockApps, List<String> hiddenApps, String liveTvPackage, String liveTvAction,
                    String sourcePanelService, String sourcePanelAction, String inputAction,
                    int columns, int rowsBelowDock,
                    boolean shamsiDate, boolean moduleCards, boolean reducedMotion, String vpnApp,
                    boolean showHomeSettingsShortcut, int backgroundColor,
-                   File wallpaper, boolean overlayApplied) {
+                   File wallpaper, boolean overlayApplied, boolean ambientGlow, String liveSourceActivity) {
         this.dockApps = Collections.unmodifiableList(dockApps);
         this.hiddenApps = Collections.unmodifiableList(hiddenApps);
         this.liveTvPackage = liveTvPackage;
@@ -76,6 +83,8 @@ final class Config {
         this.backgroundColor = backgroundColor;
         this.wallpaper = wallpaper;
         this.overlayApplied = overlayApplied;
+        this.ambientGlow = ambientGlow;
+        this.liveSourceActivity = liveSourceActivity;
     }
 
     /** The folder the theme tools push into; null when external storage is unavailable. */
@@ -101,6 +110,8 @@ final class Config {
         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
         int background = 0xFF000000;
         boolean applied = false;
+        boolean ambientGlow = true;
+        String liveSourceActivity = "";
 
         File dir = dir(ctx);
         File file = dir != null ? new File(dir, FILE_NAME) : null;
@@ -122,6 +133,8 @@ final class Config {
             vpn = string(json, "vpn_app", vpn);
             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
             background = color(json, "background_color", background);
+            ambientGlow = bool(json, "ambient_glow", ambientGlow);
+            liveSourceActivity = string(json, "live_source_activity", liveSourceActivity);
         }
         File wallpaper = dir != null ? new File(dir, WALLPAPER_NAME) : null;
         if (wallpaper != null && !(wallpaper.isFile() && wallpaper.length() > 0)) wallpaper = null;
@@ -130,7 +143,7 @@ final class Config {
 
         return new Config(dock, hidden, liveTv, liveTvAction, panelService, panelAction, inputAction,
                 Math.max(1, columns), Math.max(0, rowsBelow), shamsi, moduleCards, reducedMotion,
-                vpn, homeSettings, background, wallpaper, applied);
+                vpn, homeSettings, background, wallpaper, applied, ambientGlow, liveSourceActivity);
     }
 
     /** Reads and parses the overlay; any problem means "no overlay", never a crash on the home screen. */

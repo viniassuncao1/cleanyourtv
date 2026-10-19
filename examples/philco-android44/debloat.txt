@@ -1,0 +1,45 @@
+# Philco smart TV (Hikeen / Changhong software, Realtek rtd298x_tv001), Brazil
+# Android 4.4.2 (API 19, not Android TV), build eng.wubf.20170729.023516 test-keys, 456 MB RAM, 1280x720
+#
+# HONEST STATUS: tested on one TV, and the packages below were disabled for a few HOURS (one afternoon),
+# not the few days CONTRIBUTING.md asks for. Nothing broke that we noticed (the launcher, Wi-Fi, opening
+# the source panel, a reboot). NOT tested: the remote's Source key, switching inputs with it, the TV
+# tuner. Treat it as a starting point and comment out anything you use.
+#
+# tools/tv.py was not tried on this firmware (Android 4.4); the steps below use plain adb. <TV_IP> is your TV's address.
+#   Connect:  adb connect <TV_IP>:5555
+#   Apply:    sed 's/#.*//' examples/philco-android44/debloat.txt | awk 'NF{print $1}' \
+#               | while read p; do adb -s <TV_IP>:5555 shell pm disable-user "$p"; done
+#   Undo:     the same loop with `pm enable "$p"` instead of `pm disable-user "$p"`
+# Everything is DISABLED, not uninstalled. Take the backup first, see docs/android-4.4.md.
+#
+# Left alone on purpose (do not disable):
+#   com.tsb.tv                        the TV app: tuner, HDMI and the source picture (very likely behind the Source key too, not verified)
+#   com.hikeen.xymenu                 "Fonte resposta": the source panel the launcher's HDMI tile opens
+#   com.haiersoft.launcherproject2995hk   the stock launcher (keep it: it should be what Home returns to if you remove the new
+#                                         launcher; uninstalling the new launcher was not tested on this TV)
+#   com.hikeen.otaupdate              the firmware updater; hide its tile instead (config.json hidden_apps)
+#   com.android.phone, the providers, com.android.systemui, com.android.settings
+
+# Screensavers and live wallpapers (never shown on a TV)
+com.android.galaxy4
+com.android.noisefield
+com.android.dreams.phototable
+com.android.dreams.basic
+com.android.wallpaper.livepicker
+
+# Google Calendar sync (no account on this TV)
+com.google.android.syncadapters.calendar
+com.android.providers.calendar
+
+# Phone and SMS leftovers (a TV has no modem)
+com.android.speechrecorder
+com.android.smspush
+
+# Optional, only if you do not use it: a pre-installed music app, about 28 MB of RAM while running
+deezer.android.app
+
+# Hidden from the launcher but NOT disabled (set "hidden_apps" in config.json, see themes/philco-android44):
+#   com.hikeen.selftest     factory self-test tool (7 MB, requests no permissions)
+#   com.hikeen.otaupdate    firmware updater (powerful permissions: do not open it by accident)
+#   com.cvte.taskmanager    "one click cleaner", closes background apps (40 KB)

@@ -26,11 +26,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -167,6 +169,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (cfg.wallpaper != null) showWallpaper(cfg.wallpaper);
         glass = findViewById(R.id.glass);
         ambient = findViewById(R.id.ambient);
+        if (!cfg.ambientGlow) ambient.setVisibility(View.GONE);   // plain background colour, no glow
         heroName = findViewById(R.id.heroName);
         greeting = findViewById(R.id.greeting);
         btnWifi = findViewById(R.id.btnWifi);
@@ -292,6 +295,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         packageFilter.addAction(Intent.ACTION_PACKAGE_CHANGED);
         packageFilter.addDataScheme("package");
 
+        showLiveSourceIfPlaying(cfg.liveSourceActivity, savedInstanceState);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             stopWatching = WatchersApi21.start(this, handler, this::updateInputsButton, this::updateWifiLabel);
         } else {
@@ -759,14 +763,27 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The TV's own source-selection panel, for TVs that have no TvInputManager (TCL Android TV 9). */
     private void openSourcePanel() {
-        Intent i = new Intent(sourcePanelAction);
-        ComponentName c = ComponentName.unflattenFromString(sourcePanelService);
-        if (c != null) i.setComponent(c);
-        try {
-            startService(i);
-        } catch (Exception e) {
-            Toast.makeText(this, R.string.not_available, Toast.LENGTH_SHORT).show();
-        }
+        AppAdapter.openSourcePanel(this, sourcePanelService, sourcePanelAction);
+    }
+
+    /**
+     * Right after the TV starts a video source (HDMI, antenna) can already be playing under the menu: the TV resumed it,
+     * or a console woke the TV over CEC. The menu covers the picture but the sound goes on, so open the TV app (the
+     * configured live_source_activity), which shows it. Home then returns to the menu and the TV silences the source.
+     * Only in the first two minutes after boot, so a menu that is recreated while you are watching can never trap you.
+     */
+    private void showLiveSourceIfPlaying(String component, Bundle savedState) {
+        if (savedState != null || component.isEmpty() || SystemClock.elapsedRealtime() > 2 * 60 * 1000L) return;
+        final ComponentName tvApp = ComponentName.unflattenFromString(component);
+        if (tvApp == null || !RealtekTv.liveSourcePlaying(this)) return;
+        Log.i("TvHome", "a video source is playing under the menu; opening " + component);
+        handler.postDelayed(() -> {
+            try {
+                startActivity(new Intent().setComponent(tvApp).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (Exception e) {
+                Log.w("TvHome", "cannot open " + component + ": " + e);
+            }
+        }, 600);
     }
 
     private void open(Intent i) {

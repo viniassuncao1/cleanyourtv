@@ -77,6 +77,9 @@ systems; see [SHOWCASE.md](SHOWCASE.md) for a webOS port. **Fire TV** takes the 
 since Fire OS will not hand Home to a third-party launcher. A few China-market TCL sets refuse to
 install any launcher at all; their lists say so in the header.
 
+Very old sets on **Android 4.4** that are not Android TV can run the launcher too (`minSdk 19` in this fork);
+tried on one TV for one afternoon, see [docs/android-4.4.md](docs/android-4.4.md).
+
 Tested lists from contributors, one folder per model in [`examples/`](examples/):
 
 **Xiaomi** 12 · **TCL** 11 · **Sony** 7 · **CHiQ** 2 · **Hisense** 2 · **Philips** 2 · BenQ ·
