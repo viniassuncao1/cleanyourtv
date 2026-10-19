@@ -14,6 +14,7 @@ import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -28,6 +29,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -138,7 +141,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
      */
     void reload(List<Cards.Card> cards) {
         PackageManager pm = ctx.getPackageManager();
-        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
+        Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(launcherCategory());
         List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
         Map<String, Cards.Card> cardByPkg = new HashMap<>();
         for (Cards.Card c : cards) cardByPkg.put(c.pkg, c);
@@ -177,26 +180,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                 && pm.resolveActivity(new Intent(Settings.ACTION_HOME_SETTINGS), 0) != null) {
             fresh.add(new Entry(Entry.HOME_SETTINGS, ctx.getString(R.string.home_settings),
                     new ComponentName(ctx, HomeSettingsActivity.class), null,
-                    ctx.getDrawable(R.drawable.ic_home_settings), null, 0));
+                    ContextCompat.getDrawable(ctx, R.drawable.ic_home_settings), null, 0));
         }
         items.clear();
         items.addAll(fresh);
         notifyDataSetChanged();
     }
 
+    /** Banners are an Android 5.0+ concept; before that an app only has an icon, which the tile shows instead. */
     private Drawable loadBanner(PackageManager pm, ResolveInfo ri) {
-        int id = ri.activityInfo.banner;
-        if (id == 0) id = ri.activityInfo.applicationInfo.banner;
-        if (id != 0) {
-            try {
-                Resources resources = pm.getResourcesForApplication(ri.activityInfo.applicationInfo);
-                // Keep at least xhdpi detail rather than downsampling artwork before the focus zoom.
-                int density = Math.max(DisplayMetrics.DENSITY_XHIGH, ctx.getResources().getDisplayMetrics().densityDpi);
-                return resources.getDrawableForDensity(id, density, null);
-            } catch (PackageManager.NameNotFoundException | Resources.NotFoundException ignored) {
-            }
-        }
-        return ri.activityInfo.loadBanner(pm);
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? Api21.loadBanner(ctx, pm, ri) : null;
     }
 
     @NonNull
@@ -262,7 +255,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             return;
         }
         Intent i = new Intent(Intent.ACTION_MAIN)
-                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+                .addCategory(launcherCategory())
                 .setComponent(e.component)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
         try {
@@ -350,9 +343,52 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return Color.HSVToColor(hsv);
     }
 
+    /**
+     * The intent category that lists a TV's apps: LEANBACK_LAUNCHER from Android 5.0, where TV apps declare
+     * it. Before that there is no such category and TV apps use the plain LAUNCHER entry.
+     */
+    static String launcherCategory() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+                ? Intent.CATEGORY_LEANBACK_LAUNCHER : Intent.CATEGORY_LAUNCHER;
+    }
+
     /** Corner radius for a tile of this width: 16dp at the design width, proportionally less when smaller. */
     static float cornerRadius(int tileWidthPx, float density) {
         return 16f * density * Math.min(1f, tileWidthPx / (DESIGN_W_DP * density));
+    }
+
+    /**
+     * Android 5.0+ only: app banners and the rounded clipping of a tile (Outline). They live in their own class
+     * so Android 4.x never loads these types; there the tile shows the icon and keeps its rounded background,
+     * and only a banner would be square.
+     */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private static final class Api21 {
+        static Drawable loadBanner(Context ctx, PackageManager pm, ResolveInfo ri) {
+            int id = ri.activityInfo.banner;
+            if (id == 0) id = ri.activityInfo.applicationInfo.banner;
+            if (id != 0) {
+                try {
+                    Resources resources = pm.getResourcesForApplication(ri.activityInfo.applicationInfo);
+                    // Keep at least xhdpi detail rather than downsampling artwork before the focus zoom.
+                    int density = Math.max(DisplayMetrics.DENSITY_XHIGH, ctx.getResources().getDisplayMetrics().densityDpi);
+                    return resources.getDrawableForDensity(id, density, null);
+                } catch (PackageManager.NameNotFoundException | Resources.NotFoundException ignored) {
+                }
+            }
+            return ri.activityInfo.loadBanner(pm);
+        }
+
+        static void clipRounded(View card, final float density) {
+            card.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
+                }
+            });
+            card.setClipToOutline(true);
+        }
     }
 
     static final class Holder extends RecyclerView.ViewHolder {
@@ -373,14 +409,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             this.reducedMotion = reducedMotion;
 
             final float density = v.getResources().getDisplayMetrics().density;
-            card.setOutlineProvider(new ViewOutlineProvider() {
-                @Override
-                public void getOutline(View view, Outline outline) {
-                    // 16dp at the design width, scaled down with the tile so small tiles keep the same shape.
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRadius(view.getWidth(), density));
-                }
-            });
-            card.setClipToOutline(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) Api21.clipRounded(card, density);
 
             card.setOnKeyListener((view, keyCode, event) -> {
                 if (event.getAction() != KeyEvent.ACTION_DOWN) return false;

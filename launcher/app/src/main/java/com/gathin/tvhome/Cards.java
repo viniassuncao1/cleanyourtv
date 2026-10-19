@@ -198,7 +198,7 @@ final class Cards {
         Set<String> tiles = new HashSet<>();
         Map<String, Set<String>> names = new HashMap<>();
         for (ResolveInfo ri : pm.queryIntentActivities(
-                new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER), 0)) {
+                new Intent(Intent.ACTION_MAIN).addCategory(AppAdapter.launcherCategory()), 0)) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
             tiles.add(new ComponentName(pkg, ri.activityInfo.name).flattenToString());

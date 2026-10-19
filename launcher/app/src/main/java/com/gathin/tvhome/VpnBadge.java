@@ -2,6 +2,7 @@ package com.gathin.tvhome;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.style.ReplacementSpan;
@@ -30,7 +31,7 @@ final class VpnBadge extends ReplacementSpan {
         this.fill = lock != null ? GREEN : RED;
         this.ink = lock != null ? INK : INK_OFF;
         this.lock = lock != null ? lock.mutate() : null;
-        if (this.lock != null) this.lock.setTint(ink);
+        if (this.lock != null) this.lock.setColorFilter(ink, PorterDuff.Mode.SRC_IN);   // setTint needs Android 5.0
         this.density = density;
     }
 

@@ -20,6 +20,7 @@ public class GlassView extends View {
     private final Paint rim = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
+    private final RectF glowRect = new RectF();   // drawRoundRect with four floats needs API 21; RectF works everywhere
     private final float density;
     private float radius;
 
@@ -60,7 +61,8 @@ public class GlassView extends View {
             glow.setStrokeWidth(i * 2f * density);
             glow.setColor((0x30 / i) << 24 | 0xFFFFFF);
             float o = i * density;
-            canvas.drawRoundRect(rect.left - o, rect.top - o, rect.right + o, rect.bottom + o, radius + o, radius + o, glow);
+            glowRect.set(rect.left - o, rect.top - o, rect.right + o, rect.bottom + o);
+            canvas.drawRoundRect(glowRect, radius + o, radius + o, glow);
         }
 
         canvas.drawRoundRect(rect, radius, radius, fill);

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.TvHome" parent="android:Theme.Material.NoActionBar.Fullscreen">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Holo on Android 4.x; values-v21 switches to Material from Android 5.0. -->
+    <style name="Theme.TvHome" parent="android:Theme.Holo.NoActionBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:colorBackground">@android:color/black</item>
         <item name="android:windowAnimationStyle">@null</item>
@@ -18,9 +19,10 @@
         <item name="android:textColor">@drawable/pill_text</item>
         <item name="android:textSize">15sp</item>
         <item name="android:fontFamily">@font/outfit</item>
-        <item name="android:letterSpacing">0.01</item>
+        <!-- Ignored before 5.0 (and 6.0 for drawableTint): the text just keeps its default spacing and colour. -->
+        <item name="android:letterSpacing" tools:targetApi="21">0.01</item>
         <item name="android:drawablePadding">9dp</item>
-        <item name="android:drawableTint">@drawable/pill_text</item>
+        <item name="android:drawableTint" tools:targetApi="23">@drawable/pill_text</item>
         <item name="android:focusable">true</item>
         <item name="android:clickable">true</item>
     </style>
