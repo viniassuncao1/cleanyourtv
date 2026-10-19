@@ -1,6 +1,6 @@
 # Android 4.4 (API 19) and old sets that are not Android TV
 
-*Português: [mais abaixo](#portugues-pt-br).*
+*Português: [mais abaixo](#pt-br).*
 
 This fork's launcher builds with `minSdk 19`, so it can run on very old Android sets that are not
 Android TV (no Play Store, no leanback). It was tried on **one** TV, for **one afternoon**. Everything
@@ -132,6 +132,8 @@ adb -s <TV_IP>:5555 reboot
 - Time zone: `setprop persist.sys.timezone America/Sao_Paulo` and `settings put global auto_time_zone 1`.
 
 ---
+
+<a id="pt-br"></a>
 
 ## Português (pt-BR)
 

@@ -1,3 +1,13 @@
+> **Fork notice.** This is a fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT), all
+> credit for the project goes to its author. This branch adds a launcher that runs on very old sets on **Android 4.4**
+> that are not Android TV (`minSdk 19`), plus a few opt-in options for TVs with their own source panel. Tried on **one**
+> Philco TV for one afternoon: **[read the Android 4.4 guide](docs/android-4.4.md)** (English and pt-BR).
+>
+> **Aviso de fork.** Este é um fork do [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) (MIT); o
+> crédito do projeto é do autor dele. Esta branch adiciona um launcher que roda em TVs muito antigas com **Android 4.4**
+> que não são Android TV. Testado em **uma** TV Philco, durante uma tarde: **[leia o guia do Android 4.4](docs/android-4.4.md#pt-br)**.
+> Everything below is the original README / O resto desta página é o README original.
+
 <p align="center">
   <a href="https://cleanyour.tv"><img src="https://raw.githubusercontent.com/Gathin23/cleanyourtv/main/docs/banner.png" alt="CleanYourTV. Your TV, minus the ads." width="800"></a>
 </p>
